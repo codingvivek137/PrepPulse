@@ -183,74 +183,34 @@ const Agent = ({
   }, [messages, callStatus, feedbackId, interviewId, router, type, userId]);
 
   const handleCall = async () => {
-    console.log("🚀 Starting call...");
     setCallStatus(CallStatus.CONNECTING);
-    setError("");
 
-    try {
-      // Validate environment and props
-      if (type === "generate") {
-        const workflowId = process.env.NEXT_PUBLIC_VAPI_WORKFLOW_ID;
-        
-        if (!workflowId) {
-          throw new Error("NEXT_PUBLIC_VAPI_WORKFLOW_ID environment variable is not set");
-        }
-
-        if (!userName || !userId) {
-          throw new Error("userName and userId are required for generate type");
-        }
-
-        console.log("📞 Starting workflow call with:", {
-          workflowId,
-          userName,
-          userId,
-        });
-
-        await vapi.start(workflowId, {
+    if (type === "generate") {
+      await vapi.start(
+        undefined,
+        undefined,
+        undefined,
+        process.env.NEXT_PUBLIC_VAPI_WORKFLOW_ID!,
+        {
           variableValues: {
             username: userName,
             userid: userId,
           },
-        });
-      } else {
-        // Interview type
-        if (!interviewer) {
-          throw new Error("Interviewer configuration is not available");
         }
-
-        let formattedQuestions = "";
-        if (questions && questions.length > 0) {
-          formattedQuestions = questions
-            .map((question) => `- ${question}`)
-            .join("\n");
-        }
-
-        console.log("📞 Starting interview call with:", {
-          interviewer,
-          formattedQuestions,
-        });
-
-        await vapi.start(interviewer, {
-          variableValues: {
-            questions: formattedQuestions,
-          },
-        });
+      );
+    } else {
+      let formattedQuestions = "";
+      if (questions) {
+        formattedQuestions = questions
+          .map((question) => `- ${question}`)
+          .join("\n");
       }
 
-      console.log("✅ VAPI start call completed");
-    } catch (err: any) {
-      console.error("❌ Error in handleCall:", err);
-      
-      let errorMessage = "Failed to start the call";
-      
-      if (err?.message) {
-        errorMessage = err.message;
-      } else if (typeof err === 'string') {
-        errorMessage = err;
-      }
-      
-      setError(errorMessage);
-      setCallStatus(CallStatus.ERROR);
+      await vapi.start(interviewer, {
+        variableValues: {
+          questions: formattedQuestions,
+        },
+      });
     }
   };
 
